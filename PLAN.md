@@ -168,12 +168,12 @@ Resultado esperado: un repo git local (sin remoto; la ubicación en GitHub se de
 **AC.**
 - `./mvnw test -Dtest=ModularityTest` en verde.
 
-### `[ ]` F1-06 · modularity · **P1**
+### `[x]` F1-06 · modularity · **P1**
 
 **Objetivo.** Material real para el Post 3 y el artículo 1: el error que da `verify()` ante un acceso ilegal.
 
 **Pasos.**
-1. Crear la rama `demo/verify-roto` con un acceso de `order` a `inventory.internal.ProductRepository`.
+1. Crear la rama `demo/verify-roto` con un acceso de `order` a `inventory.internal.ProductRepository` (parche en `docs/demo-verify-roto.patch`; hace públicos `Product` y `ProductRepository`, porque al ser package-private ni compilaría).
 2. Ejecutar `ModularityTest` y guardar la salida del error en `docs/verify-error.txt` en `main`.
 3. Volver a `main`; la rama queda como demo.
 
@@ -193,7 +193,7 @@ Resultado esperado: un repo git local (sin remoto; la ubicación en GitHub se de
 - `./mvnw test -Pdocs` genera diagramas PlantUML y module canvases de `order` e `inventory` en `docs/modules/`.
 - `./mvnw test` sin el perfil no los regenera.
 
-### `[ ]` F1-08 · release · **P1**
+### `[x]` F1-08 · release · **P1**
 
 **Objetivo.** Cerrar la fase 1 con un estado citable desde el artículo 1.
 
