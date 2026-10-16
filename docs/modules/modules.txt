@@ -9,19 +9,12 @@
   o ….internal.DefaultCatalogService
   o ….internal.ProductRepository
 
-# Inventory
-> Logical name: inventory
-> Base package: com.datiacode.shop.inventory
-> Excluded packages: none
-> Spring beans:
-  o ….internal.DefaultInventoryService
-  o ….internal.StockItemRepository
-
 # Shared
 > Logical name: shared
 > Base package: com.datiacode.shop.shared
 > Excluded packages: none
 > Spring beans:
+  o ….config.AsyncConfig
   o ….config.ClockConfig
   o ….web.GlobalExceptionHandler
   o java.time.Clock
@@ -35,3 +28,20 @@
   o ….internal.OrderController
   o ….internal.OrderExceptionHandler
   o ….internal.OrderRepository
+
+# Inventory
+> Logical name: inventory
+> Base package: com.datiacode.shop.inventory
+> Excluded packages: none
+> Spring beans:
+  o ….internal.DefaultInventoryService
+  o ….internal.OrderCompletedListener
+  o ….internal.StockItemRepository
+
+# Notification
+> Logical name: notification
+> Base package: com.datiacode.shop.notification
+> Excluded packages: none
+> Spring beans:
+  o ….internal.EmailSender
+  o ….internal.OrderConfirmationListener

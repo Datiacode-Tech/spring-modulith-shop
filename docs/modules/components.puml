@@ -19,10 +19,14 @@ System_Boundary("ShopApplication_boundary", "ShopApplication", $tags="") {
   Container_Boundary("ShopApplication.ShopApplication_boundary", "ShopApplication", $tags="") {
     Component(ShopApplication.ShopApplication.Catalog, "Catalog", $techn="Module", $descr="", $tags="", $link="")
     Component(ShopApplication.ShopApplication.Order, "Order", $techn="Module", $descr="", $tags="", $link="")
+    Component(ShopApplication.ShopApplication.Inventory, "Inventory", $techn="Module", $descr="", $tags="", $link="")
+    Component(ShopApplication.ShopApplication.Notification, "Notification", $techn="Module", $descr="", $tags="", $link="")
   }
 
 }
 
+Rel(ShopApplication.ShopApplication.Inventory, ShopApplication.ShopApplication.Order, "listens to", $techn="", $tags="", $link="")
+Rel(ShopApplication.ShopApplication.Notification, ShopApplication.ShopApplication.Order, "listens to", $techn="", $tags="", $link="")
 Rel(ShopApplication.ShopApplication.Order, ShopApplication.ShopApplication.Catalog, "uses", $techn="", $tags="", $link="")
 
 SHOW_LEGEND(true)

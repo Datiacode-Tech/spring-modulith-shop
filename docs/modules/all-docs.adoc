@@ -5,10 +5,6 @@ plantuml::components.puml[,,format=svg]
 plantuml::module-catalog.puml[,,format=svg]
 include::module-catalog.adoc[]
 
-== Inventory
-plantuml::module-inventory.puml[,,format=svg]
-include::module-inventory.adoc[]
-
 == Shared
 plantuml::module-shared.puml[,,format=svg]
 include::module-shared.adoc[]
@@ -16,4 +12,12 @@ include::module-shared.adoc[]
 == Order
 plantuml::module-order.puml[,,format=svg]
 include::module-order.adoc[]
+
+== Inventory
+plantuml::module-inventory.puml[,,format=svg]
+include::module-inventory.adoc[]
+
+== Notification
+plantuml::module-notification.puml[,,format=svg]
+include::module-notification.adoc[]
 

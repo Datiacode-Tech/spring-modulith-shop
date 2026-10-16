@@ -24,6 +24,17 @@ class StockItem {
 		this.quantity = quantity;
 	}
 
+	boolean hasAtLeast(int units) {
+		return quantity >= units;
+	}
+
+	void decrease(int units) {
+		if (!hasAtLeast(units)) {
+			throw new IllegalStateException("Cannot take %d units of %s, only %d left".formatted(units, sku, quantity));
+		}
+		quantity -= units;
+	}
+
 	String getSku() {
 		return sku;
 	}

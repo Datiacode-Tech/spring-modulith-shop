@@ -56,6 +56,9 @@ Los tests de integración levantan PostgreSQL con Testcontainers, así que Docke
 | `ModularityTest` | Fronteras entre módulos (`verify()`), named interfaces y que `order` no dependa de `inventory` |
 | `DefaultCatalogServiceTest`, `DefaultInventoryServiceTest`, `DefaultOrderServiceTest` | Lógica de negocio (JUnit 5 + Mockito) |
 | `OrderControllerTest` | Capa HTTP con `@WebMvcTest`: 201/400/404/422 |
+| `OrderCompletedListenerTest` | Listener de stock, incluida la falta de stock |
+| `InventoryModuleTests`, `NotificationModuleTests` | Un solo módulo arrancado con `@ApplicationModuleTest`, estimulado con `Scenario.publish(...)` |
+| `EventRepublicationTests` | Republicación de eventos incompletos tras reiniciar |
 | `ShopApplicationTests` | Arranque completo contra PostgreSQL (Testcontainers) |
 | `DocumentationTest` | Genera `docs/modules/` (solo con `-Pdocs`) |
 
@@ -74,6 +77,8 @@ com.datiacode.shop
  ├── inventory
  │    ├── InventoryService.java          ← API pública (consulta de stock)
  │    └── internal                       ← oculto: StockItem, StockItemRepository, DefaultInventoryService
+ ├── notification
+ │    └── internal                       ← oculto: OrderConfirmationListener, EmailSender
  ├── order
  │    ├── OrderService.java              ← API pública
  │    ├── NewOrder.java, OrderDetails.java
@@ -81,15 +86,16 @@ com.datiacode.shop
  │    ├── UnknownProductException.java, OrderNotFoundException.java
  │    └── internal                       ← oculto: Order, OrderRepository, OrderController, ...
  └── shared
-      ├── config                         ← beans transversales (Clock)
+      ├── config                         ← beans transversales (Clock, @EnableAsync)
       └── web                            ← GlobalExceptionHandler (errores del framework)
 ```
 
 | Módulo | Expone | Depende de |
 |---|---|---|
 | `catalog` | `CatalogService`, `model::ProductInfo` | — |
-| `inventory` | `InventoryService` | — |
+| `inventory` | `InventoryService` | `order` (escucha `OrderCompleted`) |
 | `order` | `OrderService`, `OrderCompleted`, records y excepciones de dominio | `catalog` (consulta síncrona de nombre y precio) |
+| `notification` | — | `order` (escucha `OrderCompleted`) |
 | `shared` | — | — |
 
 **Llamar o avisar.** `order → catalog` es una llamada síncrona: sin nombre y precio no se puede guardar el pedido. Lo que pasa *después* (descontar stock, avisar al cliente) va por eventos: `order` publica `OrderCompleted` y no conoce a quien lo escucha.
@@ -135,12 +141,64 @@ curl -X POST localhost:8080/orders -H 'Content-Type: application/json' \
 
 Swagger UI: <http://localhost:8080/swagger-ui/index.html>. Productos de ejemplo: `KB-001`, `MS-001`, `MN-001` y `HD-001` (este último con stock 0, para ver cómo reacciona `inventory`).
 
+## Eventos y fiabilidad
+
+Cuando se acepta un pedido, `order` publica `OrderCompleted` y se desentiende. Quien esté interesado lo escucha:
+
+```mermaid
+sequenceDiagram
+    actor Cliente
+    participant order
+    participant DB as PostgreSQL
+    participant inventory
+    participant notification
+
+    Cliente->>order: POST /orders
+    order->>DB: guarda pedido + una fila por listener en event_publication (misma transacción)
+    order-->>Cliente: 201 Created
+    DB-->>inventory: OrderCompleted (async, tras el commit)
+    inventory->>inventory: descuenta stock (o WARN si falta)
+    DB-->>notification: OrderCompleted (async, tras el commit)
+    notification->>notification: envía email (de momento, al log)
+```
+
+```java
+// order: publica dentro de la transacción del pedido
+events.publishEvent(toEvent(order));
+
+// inventory y notification: cada uno en su hilo y su transacción
+@ApplicationModuleListener
+void on(OrderCompleted event) { ... }
+```
+
+| Módulo | Dependencia | Tipo |
+|---|---|---|
+| `order` | `catalog` | `USES_COMPONENT` (llamada síncrona) |
+| `inventory` | `order` | `EVENT_LISTENER` |
+| `notification` | `order` | `EVENT_LISTENER` |
+
+`@ApplicationModuleListener` combina `@TransactionalEventListener` (solo tras el commit), `@Async` (otro hilo, el executor `shop-async-*`) y `@Transactional(REQUIRES_NEW)` (transacción propia).
+
+### Event Publication Registry
+
+Cada publicación queda registrada en la tabla `event_publication` (migración `V2`), con una fila por listener y su estado (`PUBLISHED`, `PROCESSING`, `COMPLETED`, `FAILED`...). Con `spring.modulith.events.republish-outstanding-events-on-restart=true`, las filas que no llegaron a completarse se reenvían al arrancar.
+
+- **Demo manual:** [`docs/demo-caida.md`](docs/demo-caida.md). Perfil `demo` + `kill -9` a mitad del listener de `notification`; al reiniciar solo se reprocesa ese listener.
+- **Demo automática:** `EventRepublicationTests`. Dos contextos arrancados uno tras otro contra el mismo PostgreSQL.
+- **Entrega al menos una vez:** un listener puede ejecutarse más de una vez, así que tiene que ser idempotente.
+
+```sql
+SELECT substring(listener_id from '([A-Za-z]+Listener)') AS listener, status, completion_date
+FROM event_publication ORDER BY publication_date DESC LIMIT 4;
+```
+
 ## Perfiles
 
 | Perfil | Uso |
 |---|---|
 | `dev` | Desarrollo local contra los servicios de `docker-compose.yml`; lee `.env` |
 | `test` | Tests; la base de datos llega por Testcontainers |
+| `demo` | Combinado con `dev`: pausa de 20 s en el listener de `notification` para la demo de caída |
 | `prod` | Variables de entorno `DATABASE_*`, sin Swagger, log a fichero con rotación |
 
 ## Tags y artículos
@@ -148,7 +206,7 @@ Swagger UI: <http://localhost:8080/swagger-ui/index.html>. Productos de ejemplo:
 | Tag | Artículo | Contenido |
 |---|---|---|
 | `blog-1-modulos` | Fundamentos | Módulos `catalog`, `inventory` y `order`, API vs `internal`, `@NamedInterface`, `verify()`, `Documenter` |
-| `blog-2-eventos` | Eventos y fiabilidad | *(pendiente)* |
+| `blog-2-eventos` | Eventos y fiabilidad | `OrderCompleted`, listeners en `inventory` y `notification`, Event Publication Registry, republicación y demo de caída |
 | `blog-3-externalizacion` | Salir del monolito | *(pendiente)* |
 | `blog-4-ia-testing` | IA, testing y camino a microservicios | *(pendiente)* |
 

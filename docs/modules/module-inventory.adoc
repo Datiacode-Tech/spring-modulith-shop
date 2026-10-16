@@ -6,4 +6,6 @@
 |_Services_
 
 * `c.d.s.i.InventoryService` (via `c.d.s.i.internal.DefaultInventoryService`)
+|Events listened to
+|* `c.d.s.o.OrderCompleted` (async) 
 |===

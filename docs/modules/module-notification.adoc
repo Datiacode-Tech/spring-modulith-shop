@@ -1,0 +1,7 @@
+[%autowidth.stretch, cols="h,a"]
+|===
+|Base package
+|`com.datiacode.shop.notification`
+|Events listened to
+|* `c.d.s.o.OrderCompleted` (async) 
+|===

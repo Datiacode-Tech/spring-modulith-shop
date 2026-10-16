@@ -234,7 +234,7 @@ Resultado esperado: un repo git local (sin remoto; la ubicación en GitHub se de
 **AC.**
 - El test comprueba que se publica exactamente un `OrderCompleted` por pedido aceptado.
 
-### `[ ]` F2-02 · inventory · **P1**
+### `[x]` F2-02 · inventory · **P1**
 
 **Objetivo.** El stock se descuenta reaccionando al evento, en otra transacción y otro hilo.
 
@@ -246,7 +246,7 @@ Resultado esperado: un repo git local (sin remoto; la ubicación en GitHub se de
 **AC.**
 - El test confirma que el stock baja tras publicar `OrderCompleted`, y que no baja (sin error) cuando falta stock.
 
-### `[ ]` F2-03 · notification · **P1**
+### `[x]` F2-03 · notification · **P1**
 
 **Objetivo.** Segundo consumidor del mismo evento; demuestra que `order` no cambia al añadir oyentes.
 
@@ -257,7 +257,7 @@ Resultado esperado: un repo git local (sin remoto; la ubicación en GitHub se de
 **AC.**
 - `ModularityTest` en verde y el Documenter muestra `notification` → `order` (como dependencia de evento), sin la flecha inversa.
 
-### `[ ]` F2-04 · events · **P0**
+### `[x]` F2-04 · events · **P0**
 
 **Objetivo.** Persistir cada publicación en `event_publication` dentro de la misma transacción del pedido (Post 6). Sin esto no hay fiabilidad que demostrar.
 
@@ -268,18 +268,18 @@ Resultado esperado: un repo git local (sin remoto; la ubicación en GitHub se de
 **AC.**
 - Tras un pedido, `event_publication` tiene una fila por listener con `completion_date` rellena.
 
-### `[ ]` F2-05 · events · **P1**
+### `[x]` F2-05 · events · **P1**
 
 **Objetivo.** Probar que un evento cuyo listener falló o no terminó se reprocesa al reiniciar.
 
 **Pasos.**
 1. Activar `spring.modulith.events.republish-outstanding-events-on-restart=true`.
-2. Escribir el test `EventRepublicationIT` (Testcontainers PostgreSQL): un listener que falla la primera vez deja la publicación incompleta; al re-arrancar el contexto se completa.
+2. Escribir el test `EventRepublicationTests` (Testcontainers PostgreSQL, dos contextos arrancados uno tras otro): un listener que falla en el primero deja la publicación incompleta; en el segundo se completa.
 
 **AC.**
-- `EventRepublicationIT` en verde.
+- `EventRepublicationTests` en verde.
 
-### `[ ]` F2-06 · events · **P2**
+### `[x]` F2-06 · events · **P2**
 
 **Objetivo.** Guion reproducible de la demo "matar la app a mitad del evento", para capturas del artículo 2.
 
@@ -290,7 +290,7 @@ Resultado esperado: un repo git local (sin remoto; la ubicación en GitHub se de
 **AC.**
 - Siguiendo el guion se observa la fila incompleta y después completada.
 
-### `[ ]` F2-07 · release · **P1**
+### `[x]` F2-07 · release · **P1**
 
 **Objetivo.** Cerrar la fase 2.
 
