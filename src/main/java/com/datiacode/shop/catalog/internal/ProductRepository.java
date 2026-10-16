@@ -1,4 +1,4 @@
-package com.datiacode.shop.inventory.internal;
+package com.datiacode.shop.catalog.internal;
 
 import java.util.Optional;
 

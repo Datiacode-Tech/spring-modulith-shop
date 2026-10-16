@@ -8,11 +8,12 @@ import java.util.Optional;
 public interface OrderService {
 
 	/**
-	 * Places an order if every item is in stock.
+	 * Places an order and publishes {@link OrderCompleted}. Stock is not checked here: the inventory module reacts to
+	 * the event (eventual consistency).
 	 *
 	 * @param order customer and requested items
 	 * @return the stored order
-	 * @throws InsufficientStockException if any item is unknown or not available in the requested quantity
+	 * @throws UnknownProductException if any item is not in the catalog
 	 */
 	OrderDetails create(NewOrder order);
 

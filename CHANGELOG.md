@@ -22,9 +22,10 @@ F-id (ver `PLAN.md`). Cada bullet incluye `[YYYY-MM-DD HH:MM]` + `(F-id)` + desc
 - **[2026-10-16 13:25]** (F1-07) `DocumentationTest` (tag `documentation`, perfil Maven `docs`) que genera diagramas C4/PlantUML, canvases y `modules.txt` en `docs/modules/`.
 - **[2026-10-16 13:26]** (F1-06) Rama `demo/verify-roto` con acceso ilegal `order` → `inventory.internal.ProductRepository` (`ModularityTest` falla con 4 violaciones; en `main` pasa), salida real en `docs/verify-error.txt` y parche en `docs/demo-verify-roto.patch`.
 - **[2026-10-16 13:26]** (F1-08) README con la sección "Módulos y fronteras" (estructura, tabla de módulos, `verify()`, documentación generada, API) y tabla de tests; tag `blog-1-modulos`.
+- **[2026-10-16 13:27]** (F2-01) Evento público `OrderCompleted` publicado con `ApplicationEventPublisher` dentro de la transacción de `DefaultOrderService.create`; `DefaultOrderServiceTest` comprueba que se publica uno por pedido aceptado y ninguno si se rechaza.
 
 ### Changed
-- (sin entradas)
+- **[2026-10-16 13:32]** (F1-09) Separado el módulo `catalog` (nombre y precio, named interface `catalog::model`) de `inventory` (solo stock, tabla `inventory_items`) para evitar el ciclo `order ↔ inventory`; `order` solo depende de `catalog`, un SKU desconocido devuelve 422 (`UnknownProductException`) y el stock pasa a gestionarse por eventos. V3 reescrita, tests, demo `verify-roto`, `docs/` y README actualizados.
 
 ### Deprecated
 - (sin entradas)

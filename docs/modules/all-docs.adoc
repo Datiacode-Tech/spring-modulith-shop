@@ -1,6 +1,10 @@
 == ShopApplication
 plantuml::components.puml[,,format=svg]
 
+== Catalog
+plantuml::module-catalog.puml[,,format=svg]
+include::module-catalog.adoc[]
+
 == Inventory
 plantuml::module-inventory.puml[,,format=svg]
 include::module-inventory.adoc[]

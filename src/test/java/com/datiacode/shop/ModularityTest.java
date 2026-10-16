@@ -18,9 +18,17 @@ class ModularityTest {
 	}
 
 	@Test
-	void exposesInventoryCatalogAsNamedInterface() {
-		var inventory = MODULES.getModuleByName("inventory").orElseThrow();
+	void exposesCatalogModelAsNamedInterface() {
+		var catalog = MODULES.getModuleByName("catalog").orElseThrow();
 
-		assertThat(inventory.getNamedInterfaces().getByName("catalog")).isPresent();
+		assertThat(catalog.getNamedInterfaces().getByName("model")).isPresent();
+	}
+
+	@Test
+	void orderDoesNotDependOnInventory() {
+		var order = MODULES.getModuleByName("order").orElseThrow();
+
+		// "Pedidos ya no conoce a inventario": inventory listens to order's events, never the other way round
+		assertThat(order.getAllDependencies(MODULES).containsModuleNamed("inventory")).isFalse();
 	}
 }

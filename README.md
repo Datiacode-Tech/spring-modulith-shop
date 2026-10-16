@@ -53,9 +53,9 @@ Los tests de integración levantan PostgreSQL con Testcontainers, así que Docke
 
 | Test | Qué cubre |
 |---|---|
-| `ModularityTest` | Fronteras entre módulos (`verify()`) y named interfaces |
-| `DefaultInventoryServiceTest`, `DefaultOrderServiceTest` | Lógica de negocio (JUnit 5 + Mockito) |
-| `OrderControllerTest` | Capa HTTP con `@WebMvcTest`: 201/400/404/409 |
+| `ModularityTest` | Fronteras entre módulos (`verify()`), named interfaces y que `order` no dependa de `inventory` |
+| `DefaultCatalogServiceTest`, `DefaultInventoryServiceTest`, `DefaultOrderServiceTest` | Lógica de negocio (JUnit 5 + Mockito) |
+| `OrderControllerTest` | Capa HTTP con `@WebMvcTest`: 201/400/404/422 |
 | `ShopApplicationTests` | Arranque completo contra PostgreSQL (Testcontainers) |
 | `DocumentationTest` | Genera `docs/modules/` (solo con `-Pdocs`) |
 
@@ -66,15 +66,19 @@ Spring Modulith trata cada **paquete directo** bajo `com.datiacode.shop` como un
 ```
 com.datiacode.shop
  ├── ShopApplication.java
- ├── inventory
- │    ├── InventoryService.java          ← API pública
- │    ├── catalog                        ← @NamedInterface("catalog")
+ ├── catalog
+ │    ├── CatalogService.java            ← API pública
+ │    ├── model                          ← @NamedInterface("model")
  │    │    └── ProductInfo.java
- │    └── internal                       ← oculto: Product, ProductRepository, DefaultInventoryService
+ │    └── internal                       ← oculto: Product, ProductRepository, DefaultCatalogService
+ ├── inventory
+ │    ├── InventoryService.java          ← API pública (consulta de stock)
+ │    └── internal                       ← oculto: StockItem, StockItemRepository, DefaultInventoryService
  ├── order
  │    ├── OrderService.java              ← API pública
  │    ├── NewOrder.java, OrderDetails.java
- │    ├── InsufficientStockException.java, OrderNotFoundException.java
+ │    ├── OrderCompleted.java            ← evento público
+ │    ├── UnknownProductException.java, OrderNotFoundException.java
  │    └── internal                       ← oculto: Order, OrderRepository, OrderController, ...
  └── shared
       ├── config                         ← beans transversales (Clock)
@@ -83,11 +87,14 @@ com.datiacode.shop
 
 | Módulo | Expone | Depende de |
 |---|---|---|
-| `inventory` | `InventoryService`, `catalog::ProductInfo` | — |
-| `order` | `OrderService`, records y excepciones de dominio | `inventory` (consulta síncrona de stock) |
+| `catalog` | `CatalogService`, `model::ProductInfo` | — |
+| `inventory` | `InventoryService` | — |
+| `order` | `OrderService`, `OrderCompleted`, records y excepciones de dominio | `catalog` (consulta síncrona de nombre y precio) |
 | `shared` | — | — |
 
-**Llamar o avisar.** `order → inventory` es una llamada síncrona porque hay que saber si hay stock *antes* de aceptar el pedido. Lo que pasa *después* de aceptarlo irá por eventos (fase 2).
+**Llamar o avisar.** `order → catalog` es una llamada síncrona: sin nombre y precio no se puede guardar el pedido. Lo que pasa *después* (descontar stock, avisar al cliente) va por eventos: `order` publica `OrderCompleted` y no conoce a quien lo escucha.
+
+**Por qué `catalog` e `inventory` son módulos distintos.** El primer diseño tenía un solo `inventory` con precio y stock, y `order` le consultaba el stock antes de aceptar el pedido. Pero si además `inventory` escucha `OrderCompleted`, depende de `order`, y el resultado es un ciclo `order ↔ inventory` que `verify()` rechaza. Separar lo que se vende (`catalog`) de lo que hay en el almacén (`inventory`) rompe el ciclo. A cambio, el stock ya no se comprueba antes de aceptar el pedido: es **consistencia eventual**, e `inventory` gestiona la falta de stock cuando procesa el evento. `ModularityTest.orderDoesNotDependOnInventory` vigila que siga así.
 
 **Doble protección.** Las clases de `internal` son package-private, así que Java ya impide la mayoría de accesos ilegales. Cuando una clase interna tiene que ser pública (algo habitual en proyectos reales), quien vigila la frontera es `ApplicationModules.verify()`.
 
@@ -97,10 +104,10 @@ com.datiacode.shop
 ./mvnw test -Dtest=ModularityTest
 ```
 
-La rama `demo/verify-roto` añade a propósito un acceso de `order` a `inventory.internal.ProductRepository`. En esa rama el test falla con:
+La rama `demo/verify-roto` añade a propósito un acceso de `order` a `catalog.internal.ProductRepository`. En esa rama el test falla con:
 
 ```
-- Module 'order' depends on non-exposed type com.datiacode.shop.inventory.internal.ProductRepository within module 'inventory'!
+- Module 'order' depends on non-exposed type com.datiacode.shop.catalog.internal.ProductRepository within module 'catalog'!
 Field <com.datiacode.shop.order.internal.StockShortcut.products> has type <...ProductRepository> in (StockShortcut.java:0)
 ```
 
@@ -118,7 +125,7 @@ Genera en [`docs/modules/`](docs/modules/) el diagrama de componentes C4 (`compo
 
 | Método | Ruta | Respuestas |
 |---|---|---|
-| `POST` | `/orders` | 201 pedido creado · 400 petición inválida · 409 sin stock o SKU desconocido |
+| `POST` | `/orders` | 201 pedido creado · 400 petición inválida · 422 SKU que no existe en el catálogo |
 | `GET` | `/orders/{id}` | 200 · 404 |
 
 ```bash
@@ -126,7 +133,7 @@ curl -X POST localhost:8080/orders -H 'Content-Type: application/json' \
   -d '{"customer":"alice","items":[{"sku":"KB-001","quantity":1},{"sku":"MS-001","quantity":2}]}'
 ```
 
-Swagger UI: <http://localhost:8080/swagger-ui/index.html>. Productos de ejemplo: `KB-001`, `MS-001`, `MN-001` y `HD-001` (este último sin stock, para provocar el 409).
+Swagger UI: <http://localhost:8080/swagger-ui/index.html>. Productos de ejemplo: `KB-001`, `MS-001`, `MN-001` y `HD-001` (este último con stock 0, para ver cómo reacciona `inventory`).
 
 ## Perfiles
 
@@ -140,7 +147,7 @@ Swagger UI: <http://localhost:8080/swagger-ui/index.html>. Productos de ejemplo:
 
 | Tag | Artículo | Contenido |
 |---|---|---|
-| `blog-1-modulos` | Fundamentos | Módulos `order` e `inventory`, API vs `internal`, `@NamedInterface`, `verify()`, `Documenter` |
+| `blog-1-modulos` | Fundamentos | Módulos `catalog`, `inventory` y `order`, API vs `internal`, `@NamedInterface`, `verify()`, `Documenter` |
 | `blog-2-eventos` | Eventos y fiabilidad | *(pendiente)* |
 | `blog-3-externalizacion` | Salir del monolito | *(pendiente)* |
 | `blog-4-ia-testing` | IA, testing y camino a microservicios | *(pendiente)* |

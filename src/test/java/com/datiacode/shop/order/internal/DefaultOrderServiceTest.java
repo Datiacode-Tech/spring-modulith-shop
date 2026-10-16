@@ -3,9 +3,9 @@ package com.datiacode.shop.order.internal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.math.BigDecimal;
@@ -19,13 +19,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
-import com.datiacode.shop.inventory.InventoryService;
-import com.datiacode.shop.inventory.catalog.ProductInfo;
-import com.datiacode.shop.order.InsufficientStockException;
+import com.datiacode.shop.catalog.CatalogService;
+import com.datiacode.shop.catalog.model.ProductInfo;
 import com.datiacode.shop.order.NewOrder;
+import com.datiacode.shop.order.OrderCompleted;
+import com.datiacode.shop.order.UnknownProductException;
 
 @ExtendWith(MockitoExtension.class)
 class DefaultOrderServiceTest {
@@ -38,21 +41,23 @@ class DefaultOrderServiceTest {
 	OrderRepository orders;
 
 	@Mock
-	InventoryService inventory;
+	CatalogService catalog;
+
+	@Mock
+	ApplicationEventPublisher events;
 
 	DefaultOrderService service;
 
 	@BeforeEach
 	void setUp() {
-		service = new DefaultOrderService(orders, inventory, Clock.fixed(NOW, ZoneOffset.UTC));
+		service = new DefaultOrderService(orders, catalog, events, Clock.fixed(NOW, ZoneOffset.UTC));
 	}
 
 	@Test
-	@DisplayName("accepts the order and computes the total when every item is in stock")
-	void acceptsOrderWhenInStock() {
-		given(inventory.findProduct("KB-001")).willReturn(Optional.of(KEYBOARD));
-		given(inventory.findProduct("MS-001")).willReturn(Optional.of(MOUSE));
-		given(inventory.isAvailable(any(), anyInt())).willReturn(true);
+	@DisplayName("stores the order with catalog prices and computes the total")
+	void storesOrderWithCatalogPrices() {
+		given(catalog.findProduct("KB-001")).willReturn(Optional.of(KEYBOARD));
+		given(catalog.findProduct("MS-001")).willReturn(Optional.of(MOUSE));
 		given(orders.save(any(Order.class))).willAnswer(invocation -> invocation.getArgument(0));
 
 		var details = service.create(new NewOrder("alice",
@@ -66,24 +71,31 @@ class DefaultOrderServiceTest {
 	}
 
 	@Test
-	@DisplayName("rejects the order and stores nothing when an item is out of stock")
-	void rejectsOrderWhenOutOfStock() {
-		given(inventory.findProduct("KB-001")).willReturn(Optional.of(KEYBOARD));
-		given(inventory.isAvailable("KB-001", 30)).willReturn(false);
+	@DisplayName("publishes exactly one OrderCompleted with the order data when the order is accepted")
+	void publishesOrderCompleted() {
+		given(catalog.findProduct("KB-001")).willReturn(Optional.of(KEYBOARD));
+		given(orders.save(any(Order.class))).willAnswer(invocation -> invocation.getArgument(0));
 
-		assertThatExceptionOfType(InsufficientStockException.class)
-				.isThrownBy(() -> service.create(new NewOrder("alice", List.of(new NewOrder.Item("KB-001", 30)))))
-				.satisfies(ex -> assertThat(ex.getSku()).isEqualTo("KB-001"));
-		verify(orders, never()).save(any());
+		service.create(new NewOrder("alice", List.of(new NewOrder.Item("KB-001", 2))));
+
+		var captor = ArgumentCaptor.forClass(OrderCompleted.class);
+		verify(events, times(1)).publishEvent(captor.capture());
+		var event = captor.getValue();
+		assertThat(event.customer()).isEqualTo("alice");
+		assertThat(event.total()).isEqualByComparingTo("179.80");
+		assertThat(event.completedAt()).isEqualTo(NOW);
+		assertThat(event.lines()).containsExactly(new OrderCompleted.Line("KB-001", "Mechanical keyboard", 2));
 	}
 
 	@Test
-	@DisplayName("rejects the order when the SKU does not exist")
+	@DisplayName("rejects the order, stores nothing and publishes nothing when the SKU is not in the catalog")
 	void rejectsOrderWhenSkuUnknown() {
-		given(inventory.findProduct("NOPE")).willReturn(Optional.empty());
+		given(catalog.findProduct("NOPE")).willReturn(Optional.empty());
 
-		assertThatExceptionOfType(InsufficientStockException.class)
-				.isThrownBy(() -> service.create(new NewOrder("alice", List.of(new NewOrder.Item("NOPE", 1)))));
+		assertThatExceptionOfType(UnknownProductException.class)
+				.isThrownBy(() -> service.create(new NewOrder("alice", List.of(new NewOrder.Item("NOPE", 1)))))
+				.satisfies(ex -> assertThat(ex.getSku()).isEqualTo("NOPE"));
 		verify(orders, never()).save(any());
+		verify(events, never()).publishEvent(any());
 	}
 }

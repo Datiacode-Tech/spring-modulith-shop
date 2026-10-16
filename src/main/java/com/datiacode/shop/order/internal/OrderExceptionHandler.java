@@ -7,8 +7,8 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import com.datiacode.shop.order.InsufficientStockException;
 import com.datiacode.shop.order.OrderNotFoundException;
+import com.datiacode.shop.order.UnknownProductException;
 
 /**
  * Maps the order module's domain exceptions to HTTP. The module owns its error contract; generic errors are left to
@@ -18,10 +18,10 @@ import com.datiacode.shop.order.OrderNotFoundException;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 class OrderExceptionHandler {
 
-	@ExceptionHandler(InsufficientStockException.class)
-	ProblemDetail handleInsufficientStock(InsufficientStockException ex) {
-		var problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
-		problem.setTitle("Insufficient stock");
+	@ExceptionHandler(UnknownProductException.class)
+	ProblemDetail handleUnknownProduct(UnknownProductException ex) {
+		var problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_CONTENT, ex.getMessage());
+		problem.setTitle("Unknown product");
 		problem.setProperty("sku", ex.getSku());
 		return problem;
 	}

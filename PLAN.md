@@ -35,6 +35,7 @@ Resultado esperado: un repo git local (sin remoto; la ubicación en GitHub se de
 | F1-06 | modularity | P1 | Rama `demo/verify-roto` con un acceso ilegal y el error capturado |
 | F1-07 | docs | P1 | `DocumentationTest` con `Documenter`; diagramas en `docs/modules/` |
 | F1-08 | release | P1 | README fase 1 + tag `blog-1-modulos` |
+| F1-09 | catalog / inventory | P0 | Separar `catalog` de `inventory` para evitar el ciclo `order ↔ inventory` (Post 5) |
 | F2-01 | order | P1 | Evento `OrderCompleted` publicado al completar el pedido |
 | F2-02 | inventory | P1 | `@ApplicationModuleListener` que descuenta stock |
 | F2-03 | notification | P1 | Módulo `notification` con listener y `EmailSender` (log, de momento) |
@@ -205,14 +206,28 @@ Resultado esperado: un repo git local (sin remoto; la ubicación en GitHub se de
 - `./mvnw verify` en verde.
 - `git tag` lista `blog-1-modulos`.
 
+### `[x]` F1-09 · catalog / inventory · **P0**
+
+**Objetivo.** Romper el ciclo que aparecería en F2-02: `order → inventory` (consulta síncrona) más `inventory → order` (listener de `OrderCompleted`). El Post 5 dice "Pedidos ya no conoce a inventario", así que `order` solo llama de forma síncrona a un módulo nuevo `catalog` (nombre y precio), e `inventory` queda solo con el stock. Decisión del usuario, 2026-10-16.
+
+**Pasos.**
+1. Crear el módulo `catalog`: API `CatalogService.findProduct(sku)`, `ProductInfo` en `catalog.model` (`@NamedInterface("model")`), `Product` y repositorio en `internal`.
+2. Reducir `inventory` a `StockItem(sku, quantity)` con API `InventoryService.stockOf(sku)`; migración `V3` reescrita (aún no hay nada publicado) con las tablas `products` e `inventory_items`; resetear el esquema de la base de desarrollo.
+3. `order` deja de depender de `inventory`: un SKU desconocido lanza `UnknownProductException` → 422. Ya no se comprueba el stock antes de aceptar (consistencia eventual; la falta de stock la gestiona `inventory` en F2-02).
+4. Actualizar los tests, `docs/modules`, la demo `verify-roto` y el README; mover el tag `blog-1-modulos` (local, con tu OK).
+
+**AC.**
+- `./mvnw clean verify` en verde; `/actuator/modulith` muestra `order → catalog` y ninguna dependencia de `order` hacia `inventory`.
+- La rama `demo/verify-roto` sigue fallando en `verify()`.
+
 ## Fase 2 — Eventos y fiabilidad (`blog-2-eventos` · Posts 5–6)
 
-### `[ ]` F2-01 · order · **P1**
+### `[x]` F2-01 · order · **P1**
 
 **Objetivo.** `order` avisa de que algo pasó sin saber quién escucha (Post 5).
 
 **Pasos.**
-1. Crear el record público `order/OrderCompleted(orderId, customer, lines, total, completedAt)`.
+1. Crear el record público `order/OrderCompleted(orderId, customer, lines, total, completedAt)` con `Line(sku, productName, quantity)`.
 2. Publicarlo con `ApplicationEventPublisher` dentro de la transacción de `OrderService.create`.
 3. Ampliar `OrderServiceTest` para comprobar la publicación.
 
@@ -224,12 +239,12 @@ Resultado esperado: un repo git local (sin remoto; la ubicación en GitHub se de
 **Objetivo.** El stock se descuenta reaccionando al evento, en otra transacción y otro hilo.
 
 **Pasos.**
-1. Crear `inventory/internal/OrderCompletedListener` con `@ApplicationModuleListener` que descuenta el stock.
+1. Crear `inventory/internal/OrderCompletedListener` con `@ApplicationModuleListener` que descuenta el stock. Si no hay suficiente (ya no se comprueba antes, ver F1-09), no lo descuenta, registra un WARN de falta de stock y el evento se da por procesado (sin reintentos infinitos).
 2. Activar `@EnableAsync` en `shared/config` con un executor propio.
 3. Escribir un test de integración con `@ApplicationModuleTest` + `Scenario.publish(...)` que verifique el stock final.
 
 **AC.**
-- El test confirma que el stock baja tras publicar `OrderCompleted`.
+- El test confirma que el stock baja tras publicar `OrderCompleted`, y que no baja (sin error) cuando falta stock.
 
 ### `[ ]` F2-03 · notification · **P1**
 

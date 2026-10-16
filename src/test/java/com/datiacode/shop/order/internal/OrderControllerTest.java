@@ -21,9 +21,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.datiacode.shop.order.InsufficientStockException;
 import com.datiacode.shop.order.OrderDetails;
 import com.datiacode.shop.order.OrderService;
+import com.datiacode.shop.order.UnknownProductException;
 
 @WebMvcTest(OrderController.class)
 class OrderControllerTest {
@@ -65,13 +65,13 @@ class OrderControllerTest {
 	}
 
 	@Test
-	@DisplayName("POST /orders returns 409 with the SKU when stock is insufficient")
-	void createReturns409WhenOutOfStock() throws Exception {
-		given(orderService.create(any())).willThrow(new InsufficientStockException("KB-001", 1));
+	@DisplayName("POST /orders returns 422 with the SKU when the product is not in the catalog")
+	void createReturns422WhenProductUnknown() throws Exception {
+		given(orderService.create(any())).willThrow(new UnknownProductException("KB-001"));
 
 		mvc.perform(post("/orders").contentType(MediaType.APPLICATION_JSON).content(VALID_REQUEST))
-				.andExpect(status().isConflict())
-				.andExpect(jsonPath("$.title").value("Insufficient stock"))
+				.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.title").value("Unknown product"))
 				.andExpect(jsonPath("$.sku").value("KB-001"));
 	}
 

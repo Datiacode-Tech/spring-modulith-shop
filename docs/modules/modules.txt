@@ -1,13 +1,21 @@
+# Catalog
+> Logical name: catalog
+> Base package: com.datiacode.shop.catalog
+> Excluded packages: none
+> Named interfaces:
+  + NamedInterface: name=<<UNNAMED>>, types=[ c.d.s.c.CatalogService ]
+  + NamedInterface: name=model, types=[ c.d.s.c.m.ProductInfo ]
+> Spring beans:
+  o ….internal.DefaultCatalogService
+  o ….internal.ProductRepository
+
 # Inventory
 > Logical name: inventory
 > Base package: com.datiacode.shop.inventory
 > Excluded packages: none
-> Named interfaces:
-  + NamedInterface: name=<<UNNAMED>>, types=[ c.d.s.i.InventoryService ]
-  + NamedInterface: name=catalog, types=[ c.d.s.i.c.ProductInfo ]
 > Spring beans:
   o ….internal.DefaultInventoryService
-  o ….internal.ProductRepository
+  o ….internal.StockItemRepository
 
 # Shared
 > Logical name: shared

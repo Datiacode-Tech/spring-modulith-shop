@@ -1,4 +1,4 @@
-package com.datiacode.shop.inventory.internal;
+package com.datiacode.shop.catalog.internal;
 
 import java.math.BigDecimal;
 
@@ -26,22 +26,14 @@ class Product {
 	@Column(nullable = false)
 	private BigDecimal price;
 
-	@Column(nullable = false)
-	private int stock;
-
 	protected Product() {
 		// for JPA
 	}
 
-	Product(String sku, String name, BigDecimal price, int stock) {
+	Product(String sku, String name, BigDecimal price) {
 		this.sku = sku;
 		this.name = name;
 		this.price = price;
-		this.stock = stock;
-	}
-
-	boolean hasStock(int quantity) {
-		return stock >= quantity;
 	}
 
 	String getSku() {
@@ -54,9 +46,5 @@ class Product {
 
 	BigDecimal getPrice() {
 		return price;
-	}
-
-	int getStock() {
-		return stock;
 	}
 }

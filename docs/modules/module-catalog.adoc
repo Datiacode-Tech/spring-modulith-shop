@@ -1,0 +1,9 @@
+[%autowidth.stretch, cols="h,a"]
+|===
+|Base package
+|`com.datiacode.shop.catalog`
+|Spring components
+|_Services_
+
+* `c.d.s.c.CatalogService` (via `c.d.s.c.internal.DefaultCatalogService`)
+|===

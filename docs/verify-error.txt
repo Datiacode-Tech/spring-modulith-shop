@@ -1,12 +1,12 @@
 # Salida real de ModularityTest con el acceso ilegal de la rama demo/verify-roto
-# (order.internal.StockShortcut usa inventory.internal.ProductRepository)
+# (order.internal.StockShortcut usa catalog.internal.ProductRepository)
 
 org.springframework.modulith.core.Violations: 
-- Module 'order' depends on non-exposed type com.datiacode.shop.inventory.internal.ProductRepository within module 'inventory'!
+- Module 'order' depends on non-exposed type com.datiacode.shop.catalog.internal.ProductRepository within module 'catalog'!
 StockShortcut declares constructor StockShortcut(ProductRepository) in (StockShortcut.java:0)
-- Module 'order' depends on non-exposed type com.datiacode.shop.inventory.internal.ProductRepository within module 'inventory'!
-Method <com.datiacode.shop.order.internal.StockShortcut.countProducts()> calls method <com.datiacode.shop.inventory.internal.ProductRepository.count()> in (StockShortcut.java:20)
-- Module 'order' depends on non-exposed type com.datiacode.shop.inventory.internal.ProductRepository within module 'inventory'!
-Field <com.datiacode.shop.order.internal.StockShortcut.products> has type <com.datiacode.shop.inventory.internal.ProductRepository> in (StockShortcut.java:0)
-- Module 'order' depends on non-exposed type com.datiacode.shop.inventory.internal.ProductRepository within module 'inventory'!
-Constructor <com.datiacode.shop.order.internal.StockShortcut.<init>(com.datiacode.shop.inventory.internal.ProductRepository)> has parameter of type <com.datiacode.shop.inventory.internal.ProductRepository> in (StockShortcut.java:0)
+- Module 'order' depends on non-exposed type com.datiacode.shop.catalog.internal.ProductRepository within module 'catalog'!
+Method <com.datiacode.shop.order.internal.StockShortcut.countProducts()> calls method <com.datiacode.shop.catalog.internal.ProductRepository.count()> in (StockShortcut.java:20)
+- Module 'order' depends on non-exposed type com.datiacode.shop.catalog.internal.ProductRepository within module 'catalog'!
+Field <com.datiacode.shop.order.internal.StockShortcut.products> has type <com.datiacode.shop.catalog.internal.ProductRepository> in (StockShortcut.java:0)
+- Module 'order' depends on non-exposed type com.datiacode.shop.catalog.internal.ProductRepository within module 'catalog'!
+Constructor <com.datiacode.shop.order.internal.StockShortcut.<init>(com.datiacode.shop.catalog.internal.ProductRepository)> has parameter of type <com.datiacode.shop.catalog.internal.ProductRepository> in (StockShortcut.java:0)
