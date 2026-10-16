@@ -110,55 +110,55 @@ Resultado esperado: un repo git local (sin remoto; la ubicación en GitHub se de
 
 ## Fase 1 — Módulos y fronteras (`blog-1-modulos` · Posts 1–4)
 
-### `[ ]` F1-01 · inventory · **P1**
+### `[x]` F1-01 · inventory · **P1**
 
 **Objetivo.** Módulo `inventory` con stock consultable desde fuera solo a través de su API pública.
 
 **Pasos.**
-1. Crear `inventory/internal/Product` (JPA), `ProductRepository` y la migración `V2__products.sql` con productos de ejemplo.
+1. Crear `inventory/internal/Product` (JPA), `ProductRepository` y la migración `V3__products.sql` con productos de ejemplo.
 2. Crear la API pública `inventory/InventoryService` con `boolean isAvailable(String sku, int quantity)`; su implementación va en `internal`.
 3. Escribir el test unitario `InventoryServiceTest` (Mockito).
 
 **AC.**
 - `InventoryServiceTest` en verde (con stock, sin stock, SKU inexistente).
 
-### `[ ]` F1-02 · order · **P1**
+### `[x]` F1-02 · order · **P1**
 
 **Objetivo.** Módulo `order` que acepta un pedido solo si hay stock: es la llamada síncrona del Post 2.
 
 **Pasos.**
-1. Crear `order/internal/Order` + `OrderLine` (JPA), `OrderRepository` y la migración `V3__orders.sql`.
+1. Crear `order/internal/Order` + `OrderLine` (JPA), `OrderRepository` y la migración `V4__orders.sql`.
 2. Crear la API pública `order/OrderService` con `create(...)`, que consulta `InventoryService` y lanza una excepción de dominio si falta stock.
 3. Escribir el test unitario `OrderServiceTest` (Mockito sobre `InventoryService`).
 
 **AC.**
 - `OrderServiceTest` en verde: pedido aceptado y pedido rechazado por falta de stock.
 
-### `[ ]` F1-03 · order / api · **P1**
+### `[x]` F1-03 · order / api · **P1**
 
 **Objetivo.** Exponer el caso de uso por HTTP siguiendo las convenciones de capas.
 
 **Pasos.**
 1. Crear `order/internal/OrderController` con `POST /orders` y `GET /orders/{id}`, y los DTOs `CreateOrderRequest`/`OrderResponse` (record + validation).
-2. Crear `shared/web/GlobalExceptionHandler` (`@RestControllerAdvice`) que traduce la falta de stock a 409 y el no encontrado a 404, con `ProblemDetail`.
+2. Crear `order/internal/OrderExceptionHandler` (advice del módulo: falta de stock → 409, no encontrado → 404) y `shared/web/GlobalExceptionHandler` (validación y errores del framework → 400), todo con `ProblemDetail`.
 3. Escribir el test `OrderControllerTest` con `@WebMvcTest`.
 
 **AC.**
 - `OrderControllerTest` en verde: 201, 400, 404 y 409.
 - Swagger UI muestra los dos endpoints.
 
-### `[ ]` F1-04 · inventory · **P2**
+### `[x]` F1-04 · inventory · **P2**
 
 **Objetivo.** Ilustrar `@NamedInterface` (Post 2): exponer un subpaquete sin hacerlo público entero.
 
 **Pasos.**
-1. Crear `inventory/spi` (p. ej. `StockLevel`, un record de consulta) con `package-info.java` anotado con `@NamedInterface("spi")`.
-2. Hacer que `order` lo use.
+1. Crear `inventory/catalog/ProductInfo` (sku, nombre, precio) con `package-info.java` anotado con `@NamedInterface("catalog")`, y `InventoryService.findProduct(sku)`.
+2. Hacer que `order` lo use para precio y nombre de las líneas.
 
 **AC.**
-- `ModularityTest` (F1-05) sigue en verde y el Documenter muestra la interfaz nombrada.
+- `ModularityTest` (F1-05) sigue en verde y comprueba que existe la interfaz nombrada `catalog`; `docs/modules/modules.txt` la lista (los canvases de esta versión no muestran named interfaces).
 
-### `[ ]` F1-05 · modularity · **P0**
+### `[x]` F1-05 · modularity · **P0**
 
 **Objetivo.** Test de estructura que falla si alguien cruza una frontera (Post 3). Es la red de seguridad de todas las fases siguientes.
 
@@ -181,7 +181,7 @@ Resultado esperado: un repo git local (sin remoto; la ubicación en GitHub se de
 - En la rama, `ModularityTest` falla con el mensaje de violación; en `main` pasa.
 - `docs/verify-error.txt` contiene la salida real.
 
-### `[ ]` F1-07 · docs · **P1**
+### `[x]` F1-07 · docs · **P1**
 
 **Objetivo.** Documentación viva generada desde el código (Post 4).
 

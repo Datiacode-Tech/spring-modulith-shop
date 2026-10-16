@@ -1,0 +1,9 @@
+[%autowidth.stretch, cols="h,a"]
+|===
+|Base package
+|`com.datiacode.shop.inventory`
+|Spring components
+|_Services_
+
+* `c.d.s.i.InventoryService` (via `c.d.s.i.internal.DefaultInventoryService`)
+|===

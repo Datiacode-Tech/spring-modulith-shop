@@ -14,6 +14,12 @@ F-id (ver `PLAN.md`). Cada bullet incluye `[YYYY-MM-DD HH:MM]` + `(F-id)` + desc
 - **[2026-10-16 13:14]** (F0-02) `docker-compose.yml` (proyecto `shop`) con PostgreSQL 16 en el puerto 5442 y healthcheck; `.env`/`.env.example` y perfil `dev` que lee `.env`; `/actuator/health` en `UP`.
 - **[2026-10-16 13:14]** (F0-03) Configuración base y perfiles `dev`/`test`/`prod`, Flyway con `V1__baseline.sql` y `V2__event_publication.sql` (adelantada de F2-04: `spring-modulith-starter-jpa` exige la tabla con `ddl-auto=validate`), `logback-spring.xml` con rotación en `prod` y `.gitignore` ampliado.
 - **[2026-10-16 13:14]** (F0-04) `README.md` inicial: qué es, stack con versiones, arranque rápido, tests, perfiles y tabla de tags.
+- **[2026-10-16 13:19]** (F1-01) Módulo `inventory`: API pública `InventoryService.isAvailable(sku, quantity)`, implementación y entidad `Product` package-private en `internal`, migración `V3__products.sql` con 4 productos de ejemplo y `DefaultInventoryServiceTest` (4 casos en verde).
+- **[2026-10-16 13:25]** (F1-04) Named interface `inventory::catalog` con `ProductInfo` e `InventoryService.findProduct(sku)`; 2 casos nuevos en `DefaultInventoryServiceTest`.
+- **[2026-10-16 13:25]** (F1-02) Módulo `order`: API `OrderService` (`create`, `findById`) con records `NewOrder`/`OrderDetails`, excepciones de dominio públicas, entidad `Order` con líneas embebidas, migración `V4__orders.sql` y consulta síncrona de stock a `inventory`; `DefaultOrderServiceTest` (3 casos).
+- **[2026-10-16 13:25]** (F1-03) `POST /orders` y `GET /orders/{id}` con DTOs, `OrderExceptionHandler` del módulo (409/404) y `GlobalExceptionHandler` en `shared.web` (400) con `ProblemDetail`; `OrderControllerTest` (5 casos) y Swagger UI operativo.
+- **[2026-10-16 13:25]** (F1-05) `ModularityTest` con `ApplicationModules.verify()` y comprobación de la named interface `catalog`.
+- **[2026-10-16 13:25]** (F1-07) `DocumentationTest` (tag `documentation`, perfil Maven `docs`) que genera diagramas C4/PlantUML, canvases y `modules.txt` en `docs/modules/`.
 
 ### Changed
 - (sin entradas)

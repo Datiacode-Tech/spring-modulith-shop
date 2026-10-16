@@ -1,0 +1,15 @@
+== ShopApplication
+plantuml::components.puml[,,format=svg]
+
+== Inventory
+plantuml::module-inventory.puml[,,format=svg]
+include::module-inventory.adoc[]
+
+== Shared
+plantuml::module-shared.puml[,,format=svg]
+include::module-shared.adoc[]
+
+== Order
+plantuml::module-order.puml[,,format=svg]
+include::module-order.adoc[]
+

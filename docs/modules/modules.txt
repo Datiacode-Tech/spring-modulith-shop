@@ -1,0 +1,29 @@
+# Inventory
+> Logical name: inventory
+> Base package: com.datiacode.shop.inventory
+> Excluded packages: none
+> Named interfaces:
+  + NamedInterface: name=<<UNNAMED>>, types=[ c.d.s.i.InventoryService ]
+  + NamedInterface: name=catalog, types=[ c.d.s.i.c.ProductInfo ]
+> Spring beans:
+  o ….internal.DefaultInventoryService
+  o ….internal.ProductRepository
+
+# Shared
+> Logical name: shared
+> Base package: com.datiacode.shop.shared
+> Excluded packages: none
+> Spring beans:
+  o ….config.ClockConfig
+  o ….web.GlobalExceptionHandler
+  o java.time.Clock
+
+# Order
+> Logical name: order
+> Base package: com.datiacode.shop.order
+> Excluded packages: none
+> Spring beans:
+  o ….internal.DefaultOrderService
+  o ….internal.OrderController
+  o ….internal.OrderExceptionHandler
+  o ….internal.OrderRepository

@@ -1,0 +1,13 @@
+[%autowidth.stretch, cols="h,a"]
+|===
+|Base package
+|`com.datiacode.shop.order`
+|Spring components
+|_Services_
+
+* `c.d.s.o.OrderService` (via `c.d.s.o.internal.DefaultOrderService`)
+|Bean references
+|* `c.d.s.i.InventoryService` (in Inventory) -- Public API of the inventory module. 
++
+Other modules may only depend on the types in this package; everything under `inventory.internal` is hidden from them and checked by `ApplicationModules.verify()`.
+|===
