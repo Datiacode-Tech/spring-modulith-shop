@@ -4,8 +4,8 @@ Todas las modificaciones notables de este proyecto se registran aquí.
 Sigue [Keep a Changelog](https://keepachangelog.com/) y este proyecto
 usa [Semantic Versioning](https://semver.org/).
 
-El plan-development que origina cada entrada se referencia con su
-F-id (ver `PLAN.md`). Cada bullet incluye `[YYYY-MM-DD HH:MM]` + `(F-id)` + descripción.
+Los F-id (F0-01, F1-03…) identifican los pasos del plan de desarrollo interno, que no forma
+parte del repositorio. Cada bullet incluye `[YYYY-MM-DD HH:MM]` + `(F-id)` + descripción.
 
 ## [Unreleased]
 
@@ -45,6 +45,7 @@ F-id (ver `PLAN.md`). Cada bullet incluye `[YYYY-MM-DD HH:MM]` + `(F-id)` + desc
 - **[2026-10-19 12:40]** (F4-08) Verificación end-to-end sobre un `git clone` limpio del commit de la fase 4, siguiendo el README (con el `.env` local para reutilizar los contenedores en marcha): `clean verify` con 42 tests; `-Pdocs` con 6 módulos e idéntico a lo commiteado; pedido 12 → 201, stock descontado, email de IA en Mailpit, offset del topic de 8 a 9, 3/3 publicaciones completadas, mismo traceId y usuario `alice` en la petición y en los listeners; 401 sin credenciales, 422 con SKU desconocido, 201 + WARN con producto sin stock; demo de caída reproducida (pedido 14: solo se reprocesa `notification`). `docs/demo-caida.md` actualizado (`curl` con Basic Auth, 3 publicaciones por pedido, salida real) y checklist del plan corregida (6 módulos; sin stock → 201). Tag `blog-4-ia-testing`.
 
 ### Changed
+- **[2026-10-19 15:10]** (F4-07) El README y `docs/verify-chatclient.md` dejan de referenciar publicaciones externas: el mapa de posts pasa a ser una tabla de conceptos con su tag. `PLAN.md` (plan de trabajo interno) sale del repositorio y se añade a `.gitignore`.
 - **[2026-10-16 13:32]** (F1-09) Separado el módulo `catalog` (nombre y precio, named interface `catalog::model`) de `inventory` (solo stock, tabla `inventory_items`) para evitar el ciclo `order ↔ inventory`; `order` solo depende de `catalog`, un SKU desconocido devuelve 422 (`UnknownProductException`) y el stock pasa a gestionarse por eventos. V3 reescrita, tests, demo `verify-roto`, `docs/` y README actualizados.
 
 ### Deprecated

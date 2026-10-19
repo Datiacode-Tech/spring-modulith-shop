@@ -1,6 +1,6 @@
 # ¿Detecta `verify()` un `ChatClient` usado fuera del módulo `ai`?
 
-Experimento de F4-06 (2026-10-19). Comprueba la afirmación del Post 9: *"verify() vigila nuestras clases, pero no impide que otro módulo use ChatClient directamente, porque es una librería"*.
+Experimento de F4-06 (2026-10-19). Comprueba una afirmación habitual sobre Spring Modulith: *"verify() vigila nuestras clases, pero no impide que otro módulo use ChatClient directamente, porque es una librería"*.
 
 ## El atajo
 
@@ -71,6 +71,6 @@ $ ./mvnw test -Dtest=ModularityTest
 
 ## Conclusión
 
-- La hipótesis se confirma y el Post 9 es correcto: `verify()` protege las fronteras **entre nuestros módulos**, no el uso de librerías.
+- La hipótesis se confirma: `verify()` protege las fronteras **entre nuestros módulos**, no el uso de librerías.
 - Para que una librería solo se use desde un módulo hace falta una regla propia. ArchUnit ya está en el classpath, porque Spring Modulith lo usa por debajo.
 - La regla no es exclusiva de la IA: sirve para cualquier dependencia que quieras confinar en un módulo (un cliente de Kafka, un SDK de pagos...).

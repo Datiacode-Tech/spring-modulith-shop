@@ -2,7 +2,7 @@
 
 Proyecto de ejemplo de un **monolito modular** con [Spring Modulith](https://spring.io/projects/spring-modulith): una tienda mínima donde cada módulo tiene fronteras claras, se comunica por eventos y puede probarse por separado.
 
-Acompaña a una serie de posts de LinkedIn y a 4 artículos del [blog de DatIACode](https://www.datiacode.com/blog). Cada artículo apunta a un tag de git con el estado exacto del código que explica.
+Acompaña a una serie de 4 artículos del [blog de DatIACode](https://www.datiacode.com/blog). Cada artículo apunta a un tag de git con el estado exacto del código que explica (ver [Tags y artículos](#tags-y-artículos)).
 
 > **Qué no es:** un e-commerce completo. No hay frontend, pagos ni catálogo con búsqueda; solo lo justo para que los conceptos de Modulith tengan un escenario creíble.
 
@@ -340,19 +340,20 @@ Aparte de los perfiles de Spring, `docker-compose.yml` tiene el perfil de compos
 
 Para ver el código de un artículo: `git checkout blog-2-eventos` (por ejemplo).
 
-## Mapa de posts y código
+## Conceptos y dónde verlos
 
-| Post | Idea | Dónde está en el código |
+| Concepto | Dónde está en el código | Tag |
 |---|---|---|
-| 1 · Monolito, microservicios y algo en medio | El monolito modular como punto intermedio | Este README; [Siguiente paso](#siguiente-paso-hacia-microservicios) |
-| 2 · Un módulo es un paquete | API pública vs `internal`, named interfaces | `catalog`, `inventory`, `order`; `catalog/model/package-info.java` |
-| 3 · Quién vigila las fronteras | `verify()` en un test | `ModularityTest`; rama `demo/verify-roto` |
-| 4 · La documentación que se escribe sola | `Documenter` | `DocumentationTest`; [`docs/modules/`](docs/modules/) |
-| 5 · De "te llamo" a "aviso de que pasó algo" | Eventos entre módulos | `OrderCompleted`; listeners de `inventory` y `notification` |
-| 6 · ¿Y si se cae la app a mitad del evento? | Event Publication Registry | `EventRepublicationTests`; [`docs/demo-caida.md`](docs/demo-caida.md) |
-| 7 · Hablar con el exterior sin romper nada | `@Externalized` | `OrderCompleted`; `ExternalizationTests` |
-| 8 · El usuario se pierde al cambiar de hilo | Contexto en listeners asíncronos | `ContextPropagationConfig`, `TraceIdFilter`; `ContextPropagationConfigTest` |
-| 9 · La IA como un módulo más | IA detrás de una interfaz, tests por módulo | Módulo `ai`; `*ModuleTests`; [`docs/verify-chatclient.md`](docs/verify-chatclient.md) |
+| Monolito modular frente a microservicios | Este README; [Siguiente paso](#siguiente-paso-hacia-microservicios) | — |
+| Un módulo es un paquete: API pública frente a `internal` | `catalog`, `inventory`, `order` | `blog-1-modulos` |
+| Exponer un subpaquete con `@NamedInterface` | `catalog/model/package-info.java` | `blog-1-modulos` |
+| Verificar las fronteras en un test | `ModularityTest`; rama `demo/verify-roto` | `blog-1-modulos` |
+| Documentación generada desde el código | `DocumentationTest`; [`docs/modules/`](docs/modules/) | `blog-1-modulos` |
+| Eventos entre módulos | `OrderCompleted`; listeners de `inventory` y `notification` | `blog-2-eventos` |
+| Event Publication Registry y reenvío tras una caída | `EventRepublicationTests`; [`docs/demo-caida.md`](docs/demo-caida.md) | `blog-2-eventos` |
+| Externalizar eventos a Kafka | `OrderCompleted` (`@Externalized`); `ExternalizationTests` | `blog-3-externalizacion` |
+| Usuario y traceId en listeners asíncronos | `ContextPropagationConfig`, `TraceIdFilter`; `ContextPropagationConfigTest` | `blog-3-externalizacion` |
+| La IA detrás de una interfaz; tests por módulo | Módulo `ai`; `*ModuleTests`; [`docs/verify-chatclient.md`](docs/verify-chatclient.md) | `blog-4-ia-testing` |
 
 ## Demos
 
@@ -385,4 +386,4 @@ Las fronteras ya están verificadas, así que extraer un módulo es un cambio de
 
 ## Estado
 
-Completo: las cuatro fases del plan están cerradas. El plan está en [`PLAN.md`](PLAN.md) y el registro de cambios en [`CHANGELOG.md`](CHANGELOG.md).
+Completo: las cuatro fases de desarrollo están cerradas. El registro de cambios está en [`CHANGELOG.md`](CHANGELOG.md).
