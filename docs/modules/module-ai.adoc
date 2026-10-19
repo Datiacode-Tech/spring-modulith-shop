@@ -1,0 +1,9 @@
+[%autowidth.stretch, cols="h,a"]
+|===
+|Base package
+|`com.datiacode.shop.ai`
+|Spring components
+|* `c.d.s.a.TextWriter` (via `c.d.s.a.internal.ChatClientTextWriter` -- `c.d.s.a.TextWriter` backed by Spring AI. The only class in the application that knows about `ChatClient`. 
++
+The HTTP timeout to the model is `spring.http.clients.read-timeout`: Spring AI builds its client from the `RestClient.Builder` that Spring Boot configures.)
+|===

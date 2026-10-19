@@ -1,3 +1,10 @@
+# Ai
+> Logical name: ai
+> Base package: com.datiacode.shop.ai
+> Excluded packages: none
+> Spring beans:
+  o ….internal.ChatClientTextWriter
+
 # Catalog
 > Logical name: catalog
 > Base package: com.datiacode.shop.catalog
@@ -16,8 +23,15 @@
 > Spring beans:
   o ….config.AsyncConfig
   o ….config.ClockConfig
+  o ….config.ContextPropagationConfig
+  o ….config.OpenApiConfig
+  o ….config.SecurityConfig
   o ….web.GlobalExceptionHandler
+  o ….web.TraceIdFilter
   o java.time.Clock
+  o org.springframework.security.core.userdetails.UserDetailsService
+  o org.springframework.security.crypto.password.PasswordEncoder
+  o org.springframework.security.web.SecurityFilterChain
 
 # Order
 > Logical name: order

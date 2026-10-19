@@ -10,6 +10,9 @@ import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import com.datiacode.shop.ai.OrderConfirmationRequest;
+import com.datiacode.shop.ai.TextGenerationException;
+import com.datiacode.shop.ai.TextWriter;
 import com.datiacode.shop.order.OrderCompleted;
 
 /**
@@ -20,6 +23,7 @@ class OrderConfirmationListener {
 
 	private static final Logger log = LoggerFactory.getLogger(OrderConfirmationListener.class);
 
+	private final TextWriter textWriter;
 	private final EmailSender emailSender;
 	private final Duration demoDelay;
 
@@ -27,8 +31,9 @@ class OrderConfirmationListener {
 	 * @param demoDelay artificial pause before sending, only set by the {@code demo} profile to have time to kill the
 	 * application while the event is being handled
 	 */
-	OrderConfirmationListener(EmailSender emailSender,
+	OrderConfirmationListener(TextWriter textWriter, EmailSender emailSender,
 			@Value("${shop.demo.notification-delay:0s}") Duration demoDelay) {
+		this.textWriter = textWriter;
 		this.emailSender = emailSender;
 		this.demoDelay = demoDelay;
 	}
@@ -42,12 +47,33 @@ class OrderConfirmationListener {
 
 		Thread.sleep(demoDelay);
 
+		emailSender.send(event.customer() + "@example.com",
+				"Order #%d confirmed".formatted(event.orderId()),
+				writeBody(event));
+	}
+
+	private String writeBody(OrderCompleted event) {
+		try {
+			return textWriter.writeOrderConfirmation(toRequest(event));
+		}
+		catch (TextGenerationException ex) {
+			// The AI text is a nice-to-have: the confirmation must go out even if the model is down or misbehaves
+			log.warn("Order {}: using the fixed confirmation text ({})", event.orderId(), ex.getMessage());
+			return fallbackBody(event);
+		}
+	}
+
+	private static OrderConfirmationRequest toRequest(OrderCompleted event) {
+		var lines = event.lines().stream()
+				.map(line -> new OrderConfirmationRequest.Line(line.productName(), line.quantity()))
+				.toList();
+		return new OrderConfirmationRequest(event.orderId(), event.customer(), lines, event.total());
+	}
+
+	private static String fallbackBody(OrderCompleted event) {
 		var items = event.lines().stream()
 				.map(line -> line.quantity() + " x " + line.productName())
 				.collect(Collectors.joining(", "));
-
-		emailSender.send(event.customer() + "@example.com",
-				"Order #%d confirmed".formatted(event.orderId()),
-				"Thanks for your order: %s. Total: %s EUR.".formatted(items, event.total()));
+		return "Thanks for your order: %s. Total: %s EUR.".formatted(items, event.total());
 	}
 }

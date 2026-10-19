@@ -2,6 +2,8 @@
 |===
 |Base package
 |`com.datiacode.shop.notification`
+|Bean references
+|* `c.d.s.a.TextWriter` (in Ai) -- Writes customer-facing texts. The rest of the application only sees this interface: which model (or whether there is a model at all) is an internal detail of the ai module.
 |Events listened to
 |* `c.d.s.o.OrderCompleted` (async) 
 |===

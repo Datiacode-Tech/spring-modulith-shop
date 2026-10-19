@@ -376,7 +376,7 @@ Resultado esperado: un repo git local (sin remoto; la ubicación en GitHub se de
 
 ## Fase 4 — IA y testing (`blog-4-ia-testing` · Post 9)
 
-### `[ ]` F4-01 · infra · **P0**
+### `[x]` F4-01 · infra · **P0**
 
 **Objetivo.** LLM local y bandeja de email visible.
 
@@ -389,7 +389,7 @@ Resultado esperado: un repo git local (sin remoto; la ubicación en GitHub se de
 - `docker compose up -d` no arranca Ollama; `docker compose --profile ai up -d` sí.
 - La API de Ollama responde a un prompt de prueba; la latencia y el consumo (`docker stats`) quedan anotados en el README.
 
-### `[ ]` F4-02 · ai · **P1**
+### `[x]` F4-02 · ai · **P1**
 
 **Objetivo.** La IA como un módulo más: interfaz pública propia, Spring AI encapsulado (Post 9).
 
@@ -401,7 +401,7 @@ Resultado esperado: un repo git local (sin remoto; la ubicación en GitHub se de
 **AC.**
 - Test unitario en verde; ninguna clase fuera de `ai.internal` importa `org.springframework.ai` (lo comprueba F4-06).
 
-### `[ ]` F4-03 · notification · **P1**
+### `[x]` F4-03 · notification · **P1**
 
 **Objetivo.** El email de confirmación lo redacta la IA y llega a Mailpit.
 
@@ -413,7 +413,7 @@ Resultado esperado: un repo git local (sin remoto; la ubicación en GitHub se de
 - Tras `POST /orders`, Mailpit muestra el email con texto generado.
 - Con Ollama apagado se envía el texto de respaldo y la publicación del evento se completa.
 
-### `[ ]` F4-04 · ai / config · **P2**
+### `[x]` F4-04 · ai / config · **P2**
 
 **Objetivo.** Alternativa en la nube por si el modelo local es demasiado lento.
 
@@ -423,7 +423,7 @@ Resultado esperado: un repo git local (sin remoto; la ubicación en GitHub se de
 **AC.**
 - Arrancando con `dev,cloud` el email se genera con el proveedor externo (lo pruebas tú con tu key).
 
-### `[ ]` F4-05 · testing · **P1**
+### `[x]` F4-05 · testing · **P1**
 
 **Objetivo.** Cada módulo se prueba aislado con `@ApplicationModuleTest` + `Scenario` (Post 9).
 
@@ -435,7 +435,7 @@ Resultado esperado: un repo git local (sin remoto; la ubicación en GitHub se de
 **AC.**
 - Los 3 tests en verde sin Ollama ni Redpanda en ejecución.
 
-### `[ ]` F4-06 · modularity · **P1**
+### `[x]` F4-06 · modularity · **P1**
 
 **Objetivo.** Resolver la afirmación pendiente del Post 9: ¿detecta `verify()` un `ChatClient` usado fuera de `ai`?
 
@@ -449,7 +449,7 @@ Resultado esperado: un repo git local (sin remoto; la ubicación en GitHub se de
 - `docs/verify-chatclient.md` recoge la salida real de ambos casos.
 - En la rama temporal `ModularityTest` falla; en `main` pasa.
 
-### `[ ]` F4-07 · docs · **P1**
+### `[x]` F4-07 · docs · **P1**
 
 **Objetivo.** README completo: la guía del proyecto.
 
@@ -459,7 +459,7 @@ Resultado esperado: un repo git local (sin remoto; la ubicación en GitHub se de
 **AC.**
 - Un clon limpio siguiendo solo el README llega al flujo end-to-end completo.
 
-### `[ ]` F4-08 · release · **P1**
+### `[x]` F4-08 · release · **P1**
 
 **Objetivo.** Cerrar el proyecto con la verificación end-to-end.
 
@@ -473,11 +473,11 @@ Resultado esperado: un repo git local (sin remoto; la ubicación en GitHub se de
 ## Verificación end-to-end
 
 1. `./mvnw clean verify` → unitarios, `ModularityTest`, `@ApplicationModuleTest` y los IT con Testcontainers en verde.
-2. `./mvnw test -Pdocs` → diagramas actualizados en `docs/modules/` con los 4 módulos.
+2. `./mvnw test -Pdocs` → diagramas actualizados en `docs/modules/` con los 6 módulos (`ai`, `catalog`, `inventory`, `notification`, `order`, `shared`).
 3. `docker compose up -d` (con tu OK) → postgres, redpanda, console, ollama y mailpit healthy.
 4. Arrancar en `dev`; `curl -u alice:... -X POST /orders` → 201.
 5. Comprobar: el stock baja (`GET` o SQL); el email aparece en Mailpit con texto de la IA; el mensaje está en `shop.orders.completed` en la consola; `event_publication` tiene todas las filas completadas; en el log aparecen `alice` y el mismo traceId en la petición y en el listener.
-6. Sin credenciales → 401; producto sin stock → 409.
+6. Sin credenciales → 401; SKU desconocido → 422; producto sin stock → 201 y WARN de falta de stock en `inventory` (consistencia eventual desde F1-09).
 7. Demo de caída (`docs/demo-caida.md`) reproducible.
 
 ## Issues abiertas / decisiones pendientes

@@ -17,12 +17,14 @@ top to bottom direction
 
 System_Boundary("ShopApplication_boundary", "ShopApplication", $tags="") {
   Container_Boundary("ShopApplication.ShopApplication_boundary", "ShopApplication", $tags="") {
+    Component(ShopApplication.ShopApplication.Ai, "Ai", $techn="Module", $descr="", $tags="", $link="")
     Component(ShopApplication.ShopApplication.Order, "Order", $techn="Module", $descr="", $tags="", $link="")
     Component(ShopApplication.ShopApplication.Notification, "Notification", $techn="Module", $descr="", $tags="", $link="")
   }
 
 }
 
+Rel(ShopApplication.ShopApplication.Notification, ShopApplication.ShopApplication.Ai, "uses", $techn="", $tags="", $link="")
 Rel(ShopApplication.ShopApplication.Notification, ShopApplication.ShopApplication.Order, "listens to", $techn="", $tags="", $link="")
 
 SHOW_LEGEND(true)
