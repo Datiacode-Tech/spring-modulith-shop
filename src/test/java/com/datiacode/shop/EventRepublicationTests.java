@@ -12,7 +12,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -71,8 +70,8 @@ class EventRepublicationTests {
 
 	private static ConfigurableApplicationContext startApplication() {
 		return new SpringApplicationBuilder(ShopApplication.class, FlakyListener.class)
-				.web(WebApplicationType.NONE)
 				.properties(
+						"server.port=0",
 						"spring.datasource.url=" + POSTGRES.getJdbcUrl(),
 						"spring.datasource.username=" + POSTGRES.getUsername(),
 						"spring.datasource.password=" + POSTGRES.getPassword(),

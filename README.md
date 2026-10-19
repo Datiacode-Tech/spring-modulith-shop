@@ -15,6 +15,8 @@ Acompaña a una serie de posts de LinkedIn y a 4 artículos del [blog de DatIACo
 | Spring Modulith | 2.1.1 |
 | Spring AI | 2.0.1 |
 | PostgreSQL | 16 (Docker) |
+| Redpanda (API de Kafka) + Redpanda Console | 24.2.4 / 2.7.2 (Docker) |
+| Spring Security | gestionado por Spring Boot |
 | Flyway | gestionado por Spring Boot |
 | springdoc-openapi | 3.1.1 |
 
@@ -30,8 +32,8 @@ Acompaña a una serie de posts de LinkedIn y a 4 artículos del [blog de DatIACo
 # 1. Variables locales (credenciales de desarrollo)
 cp .env.example .env
 
-# 2. Base de datos (PostgreSQL en el puerto 5442)
-docker compose up -d postgres
+# 2. Infraestructura: PostgreSQL (5442), Redpanda (19092) y su consola (8091)
+docker compose up -d
 
 # 3. Aplicación con el perfil dev
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
@@ -49,16 +51,18 @@ Flyway crea el esquema al arrancar. Hibernate solo lo valida (`ddl-auto=validate
 ./mvnw test
 ```
 
-Los tests de integración levantan PostgreSQL con Testcontainers, así que Docker tiene que estar en marcha. No necesitan el `docker compose` de desarrollo.
+Los tests de integración levantan PostgreSQL y Redpanda con Testcontainers, así que Docker tiene que estar en marcha. No necesitan el `docker compose` de desarrollo.
 
 | Test | Qué cubre |
 |---|---|
 | `ModularityTest` | Fronteras entre módulos (`verify()`), named interfaces y que `order` no dependa de `inventory` |
 | `DefaultCatalogServiceTest`, `DefaultInventoryServiceTest`, `DefaultOrderServiceTest` | Lógica de negocio (JUnit 5 + Mockito) |
-| `OrderControllerTest` | Capa HTTP con `@WebMvcTest`: 201/400/404/422 |
+| `OrderControllerTest` | Capa HTTP con `@WebMvcTest`: 201/400/401/404/422, cliente tomado del usuario autenticado y cabeceras de seguridad |
 | `OrderCompletedListenerTest` | Listener de stock, incluida la falta de stock |
 | `InventoryModuleTests`, `NotificationModuleTests` | Un solo módulo arrancado con `@ApplicationModuleTest`, estimulado con `Scenario.publish(...)` |
 | `EventRepublicationTests` | Republicación de eventos incompletos tras reiniciar |
+| `ExternalizationTests` | `OrderCompleted` llega al topic `shop.orders.completed` (Redpanda con Testcontainers) |
+| `ContextPropagationConfigTest` | El usuario y el traceId llegan a otro hilo, y el hilo del pool queda limpio después |
 | `ShopApplicationTests` | Arranque completo contra PostgreSQL (Testcontainers) |
 | `DocumentationTest` | Genera `docs/modules/` (solo con `-Pdocs`) |
 
@@ -131,12 +135,12 @@ Genera en [`docs/modules/`](docs/modules/) el diagrama de componentes C4 (`compo
 
 | Método | Ruta | Respuestas |
 |---|---|---|
-| `POST` | `/orders` | 201 pedido creado · 400 petición inválida · 422 SKU que no existe en el catálogo |
+| `POST` | `/orders` | 201 pedido creado · 400 petición inválida · 401 sin credenciales · 422 SKU que no existe en el catálogo |
 | `GET` | `/orders/{id}` | 200 · 404 |
 
 ```bash
-curl -X POST localhost:8080/orders -H 'Content-Type: application/json' \
-  -d '{"customer":"alice","items":[{"sku":"KB-001","quantity":1},{"sku":"MS-001","quantity":2}]}'
+curl -u alice:change-me -X POST localhost:8080/orders -H 'Content-Type: application/json' \
+  -d '{"items":[{"sku":"KB-001","quantity":1},{"sku":"MS-001","quantity":2}]}'
 ```
 
 Swagger UI: <http://localhost:8080/swagger-ui/index.html>. Productos de ejemplo: `KB-001`, `MS-001`, `MN-001` y `HD-001` (este último con stock 0, para ver cómo reacciona `inventory`).
@@ -192,6 +196,53 @@ SELECT substring(listener_id from '([A-Za-z]+Listener)') AS listener, status, co
 FROM event_publication ORDER BY publication_date DESC LIMIT 4;
 ```
 
+## Externalización y contexto
+
+### Eventos hacia fuera: `@Externalized`
+
+`OrderCompleted` sigue siendo un evento interno, pero además sale a Kafka (aquí, Redpanda) sin escribir ni un `KafkaTemplate`:
+
+```java
+@Externalized("shop.orders.completed::#{#this.orderId().toString()}")
+public record OrderCompleted(Long orderId, String customer, List<Line> lines, BigDecimal total, Instant completedAt) { ... }
+```
+
+- Lo que va antes de `::` es el topic y lo de después, la clave del mensaje (el id del pedido; así todos los mensajes de un pedido caen en la misma partición).
+- La publicación hacia Kafka pasa por el mismo Event Publication Registry que los listeners internos: si el broker está caído, esa fila queda incompleta y se reenvía al reiniciar, igual que la de cualquier listener.
+- El mensaje lleva la cabecera `__TypeId__` con el tipo Java del evento.
+
+Para verlo:
+
+1. Crea un pedido con el `curl` de la sección [API](#api).
+2. Abre Redpanda Console en <http://localhost:8091> → *Topics* → `shop.orders.completed`.
+
+> La consola usa el 8091 en el host porque el 8081 suele estar ocupado. Si lo cambias, edita `docker-compose.yml`.
+
+### Usuarios demo
+
+| Usuario | Contraseña | Rol |
+|---|---|---|
+| `alice` | `DEMO_PASSWORD` de `.env` (`change-me` en `.env.example`) | `CUSTOMER` |
+| `bob` | la misma | `CUSTOMER` |
+
+HTTP Basic y sin sesión. El cliente del pedido es siempre el usuario autenticado: si el body trae un `customer`, se ignora. `/actuator/health/**` y Swagger son públicos.
+
+### El contexto llega al listener asíncrono
+
+Un `@ApplicationModuleListener` corre en otro hilo (`shop-async-*`), así que lo que vive en `ThreadLocal` (el `SecurityContext` y el MDC) no viaja solo. En el log de un pedido real se ve que sí llega:
+
+```text
+INFO [75d254c91be64cef] ... [shop-async-3] c.d.s.n.i.OrderConfirmationListener : Order 7 confirmation requested by user alice
+```
+
+`[75d254c91be64cef]` es el traceId de la petición: `TraceIdFilter` lo toma de la cabecera `X-Trace-Id` (o lo genera) y lo devuelve en la respuesta.
+
+**Hallazgo:** no hace falta, y no sirve, un `TaskDecorator` propio.
+
+- `spring-modulith-observability` instala en el executor el `ContextPropagatingTaskDecorator` de Spring, que **sustituye en silencio** cualquier `TaskDecorator` que registres tú.
+- Ese decorator propaga todo lo registrado en el `ContextRegistry` de Micrometer. Spring Security ya registra el `SecurityContext`; el MDC, no.
+- Por eso `ContextPropagationConfig` solo registra un accessor para la clave `traceId` del MDC. El decorator también restaura el estado anterior del hilo del pool tras cada tarea, así que no se cuelan datos de otra petición.
+
 ## Perfiles
 
 | Perfil | Uso |
@@ -207,7 +258,7 @@ FROM event_publication ORDER BY publication_date DESC LIMIT 4;
 |---|---|---|
 | `blog-1-modulos` | Fundamentos | Módulos `catalog`, `inventory` y `order`, API vs `internal`, `@NamedInterface`, `verify()`, `Documenter` |
 | `blog-2-eventos` | Eventos y fiabilidad | `OrderCompleted`, listeners en `inventory` y `notification`, Event Publication Registry, republicación y demo de caída |
-| `blog-3-externalizacion` | Salir del monolito | *(pendiente)* |
+| `blog-3-externalizacion` | Salir del monolito | `@Externalized` hacia Redpanda, Spring Security y propagación del `SecurityContext` y del traceId a los listeners asíncronos |
 | `blog-4-ia-testing` | IA, testing y camino a microservicios | *(pendiente)* |
 
 ## Estado

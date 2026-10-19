@@ -46,7 +46,7 @@ Resultado esperado: un repo git local (sin remoto; la ubicación en GitHub se de
 | F3-01 | infra | P0 | Redpanda + Redpanda Console en compose |
 | F3-02 | events | P1 | `@Externalized` de `OrderCompleted` → `shop.orders.completed` |
 | F3-03 | security | P1 | Spring Security con usuarios en memoria y Basic Auth |
-| F3-04 | observability | P1 | `TaskDecorator` que propaga `SecurityContext` + MDC (traceId) a los listeners |
+| F3-04 | observability | P1 | Propagar `SecurityContext` + MDC (traceId) a los listeners (context-propagation de Micrometer) |
 | F3-05 | events | P2 | Test de externalización con Testcontainers (Redpanda) |
 | F3-06 | release | P1 | README fase 3 + tag `blog-3-externalizacion` |
 | F4-01 | infra | P0 | Ollama + Mailpit en compose; modelo ~3B |
@@ -303,18 +303,18 @@ Resultado esperado: un repo git local (sin remoto; la ubicación en GitHub se de
 
 ## Fase 3 — Salir del monolito (`blog-3-externalizacion` · Posts 7–8)
 
-### `[ ]` F3-01 · infra · **P0**
+### `[x]` F3-01 · infra · **P0**
 
 **Objetivo.** Broker Kafka local y ligero para externalizar eventos.
 
 **Pasos.**
-1. Añadir `redpanda` y `redpanda-console` a `docker-compose.yml` (consola en `localhost:8081`).
+1. Añadir `redpanda` y `redpanda-console` a `docker-compose.yml` (consola en `localhost:8091`; el 8081 lo usa knowledge-core).
 2. Añadir `spring-kafka` y `spring-modulith-events-kafka`; configurar `bootstrap-servers` en `dev`.
 
 **AC.**
 - Con tu OK, `docker compose up -d` deja Redpanda healthy y la consola accesible.
 
-### `[ ]` F3-02 · events · **P1**
+### `[x]` F3-02 · events · **P1**
 
 **Objetivo.** El mismo `OrderCompleted` sale a Kafka sin tocar `OrderService` (Post 7).
 
@@ -325,7 +325,7 @@ Resultado esperado: un repo git local (sin remoto; la ubicación en GitHub se de
 **AC.**
 - Tras `POST /orders`, el mensaje aparece en el topic `shop.orders.completed` en Redpanda Console, con el `orderId` como key.
 
-### `[ ]` F3-03 · security · **P1**
+### `[x]` F3-03 · security · **P1**
 
 **Objetivo.** Tener un `SecurityContext` real que propagar (Post 8), sin desviarse hacia OAuth.
 
@@ -337,31 +337,33 @@ Resultado esperado: un repo git local (sin remoto; la ubicación en GitHub se de
 **AC.**
 - `curl` sin credenciales → 401; con `alice` → 201 y `customer = alice`.
 
-### `[ ]` F3-04 · observability · **P1**
+### `[x]` F3-04 · observability · **P1**
 
 **Objetivo.** Que el listener asíncrono sepa quién hizo el pedido y comparta traceId con la petición (Post 8).
 
+**Hallazgo (2026-10-16).** `spring-modulith-observability` instala en el executor el `ContextPropagatingTaskDecorator` de Spring, que **sustituye** cualquier `TaskDecorator` propio. Ese decorator propaga lo que esté registrado en Micrometer context-propagation: Spring Security ya registra el `SecurityContext`, el MDC no. Decisión del usuario: registrar un accessor de MDC en vez de escribir un `TaskDecorator`.
+
 **Pasos.**
-1. Crear `shared/config/ContextPropagatingTaskDecorator`, que copia `SecurityContext` y el MDC al hilo del executor y los limpia al terminar.
-2. Registrarlo en el executor de F2-02; poner un filtro que meta `traceId` en el MDC por petición (o usar Micrometer Tracing si viene sin coste).
-3. Hacer que `OrderConfirmationListener` registre en el log el usuario y el traceId.
-4. Escribir un test unitario del decorator.
+1. Crear `shared/web/TraceIdFilter`: traceId por petición (cabecera `X-Trace-Id` o generado) en el MDC y en la respuesta; patrón de log con `%X{traceId}`.
+2. Crear `shared/config/ContextPropagationConfig`, que registra el accessor del MDC `traceId` en `ContextRegistry`; añadir la dependencia explícita `io.micrometer:context-propagation`.
+3. Hacer que `OrderConfirmationListener` registre en el log el usuario autenticado.
+4. Escribir `ContextPropagationConfigTest` con el mismo decorator que instala Modulith: propagación y limpieza del hilo.
 
 **AC.**
-- El test del decorator verifica la propagación y la limpieza.
-- En el log de un pedido real, el traceId de la petición y el del listener coinciden, y aparece `alice`.
+- `ContextPropagationConfigTest` verifica la propagación y la limpieza.
+- En el log de un pedido real, las líneas de los listeners llevan el traceId de la petición y el usuario `alice`.
 
-### `[ ]` F3-05 · events · **P2**
+### `[x]` F3-05 · events · **P2**
 
 **Objetivo.** Prueba automática de la externalización.
 
 **Pasos.**
-1. Escribir `ExternalizationIT` con Testcontainers (Redpanda + PostgreSQL) y un consumidor de prueba.
+1. Escribir `ExternalizationTests` con Testcontainers (Redpanda + PostgreSQL) y un consumidor de prueba.
 
 **AC.**
-- `ExternalizationIT` en verde.
+- `ExternalizationTests` en verde.
 
-### `[ ]` F3-06 · release · **P1**
+### `[x]` F3-06 · release · **P1**
 
 **Objetivo.** Cerrar la fase 3.
 

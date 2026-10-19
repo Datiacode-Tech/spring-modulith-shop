@@ -3,8 +3,11 @@ package com.datiacode.shop.notification.internal;
 import java.time.Duration;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.modulith.events.ApplicationModuleListener;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import com.datiacode.shop.order.OrderCompleted;
@@ -14,6 +17,8 @@ import com.datiacode.shop.order.OrderCompleted;
  */
 @Component
 class OrderConfirmationListener {
+
+	private static final Logger log = LoggerFactory.getLogger(OrderConfirmationListener.class);
 
 	private final EmailSender emailSender;
 	private final Duration demoDelay;
@@ -30,6 +35,11 @@ class OrderConfirmationListener {
 
 	@ApplicationModuleListener
 	void on(OrderCompleted event) throws InterruptedException {
+		// Runs on another thread: user and trace id arrive through context propagation (see ContextPropagationConfig)
+		var authentication = SecurityContextHolder.getContext().getAuthentication();
+		log.info("Order {} confirmation requested by user {}", event.orderId(),
+				authentication != null ? authentication.getName() : "<none: republished after restart>");
+
 		Thread.sleep(demoDelay);
 
 		var items = event.lines().stream()

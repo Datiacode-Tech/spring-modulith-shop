@@ -29,6 +29,12 @@ F-id (ver `PLAN.md`). Cada bullet incluye `[YYYY-MM-DD HH:MM]` + `(F-id)` + desc
 - **[2026-10-16 13:38]** (F2-05) Republicación al reiniciar (`republish-outstanding-events-on-restart=true`) y `EventRepublicationTests` con dos contextos sobre el mismo PostgreSQL.
 - **[2026-10-16 13:38]** (F2-06) Perfil `demo` con retardo en el listener de `notification` y guion `docs/demo-caida.md` con la salida real de un `kill -9`: solo se reprocesa el listener pendiente.
 - **[2026-10-16 13:39]** (F2-07) README con la sección "Eventos y fiabilidad" (diagrama de secuencia, tipos de dependencia, Event Publication Registry, demos) y tablas de tests, perfiles y tags actualizadas; tag `blog-2-eventos`.
+- **[2026-10-16 13:51]** (F3-03) Spring Security con usuarios en memoria `alice`/`bob` (password en `.env`) y HTTP Basic sin sesión; el cliente del pedido es el usuario autenticado; esquema `basicAuth` en OpenAPI; `OrderControllerTest` con 401 y usuario autenticado.
+- **[2026-10-16 13:51]** (F3-04) `TraceIdFilter` (MDC + cabecera `X-Trace-Id`) y `ContextPropagationConfig`, que registra el traceId en Micrometer context-propagation para que el decorator que instala Modulith lo propague junto al `SecurityContext`; `ContextPropagationConfigTest` (propagación y limpieza).
+- **[2026-10-16 13:51]** (F3-05) `ExternalizationTests`: Redpanda y PostgreSQL con Testcontainers; el pedido llega a `shop.orders.completed` con el `orderId` como key.
+- **[2026-10-19 10:46]** (F3-01) Redpanda (puerto 19092) y Redpanda Console en compose. La consola se publica en `localhost:8091`, porque el 8081 lo ocupa otro proyecto local (knowledge-core).
+- **[2026-10-19 10:46]** (F3-02) Verificación manual: `POST /orders` como `alice` (201; 401 sin credenciales) publica `OrderCompleted` en `shop.orders.completed` con clave `orderId` y cabecera `__TypeId__`; el listener asíncrono registra el usuario `alice` y el mismo traceId de la petición.
+- **[2026-10-19 11:01]** (F3-06) README: sección "Externalización y contexto" (`@Externalized`, Redpanda Console en el 8091, usuarios demo, hallazgo del `ContextPropagatingTaskDecorator`), stack, arranque con `docker compose up -d`, ejemplo de `curl` con Basic Auth y tablas de tests y tags; `./mvnw verify` en verde (28 tests). Tag `blog-3-externalizacion`.
 
 ### Changed
 - **[2026-10-16 13:32]** (F1-09) Separado el módulo `catalog` (nombre y precio, named interface `catalog::model`) de `inventory` (solo stock, tabla `inventory_items`) para evitar el ciclo `order ↔ inventory`; `order` solo depende de `catalog`, un SKU desconocido devuelve 422 (`UnknownProductException`) y el stock pasa a gestionarse por eventos. V3 reescrita, tests, demo `verify-roto`, `docs/` y README actualizados.
@@ -38,6 +44,8 @@ F-id (ver `PLAN.md`). Cada bullet incluye `[YYYY-MM-DD HH:MM]` + `(F-id)` + desc
 
 ### Removed
 - (sin entradas)
+
+- **[2026-10-19 11:01]** (F3-06) `SecurityConfig` añade `Referrer-Policy: strict-origin-when-cross-origin` (Spring Security no la pone por defecto); cubierto en `OrderControllerTest`.
 
 ### Fixed
 - (sin entradas)

@@ -1,6 +1,7 @@
 package com.datiacode.shop.order.internal;
 
 import java.net.URI;
+import java.security.Principal;
 
 import jakarta.validation.Valid;
 
@@ -31,8 +32,8 @@ class OrderController {
 
 	@PostMapping
 	@Operation(summary = "Place an order", description = "Prices the items against the catalog, stores the order and publishes OrderCompleted")
-	ResponseEntity<OrderResponse> create(@Valid @RequestBody CreateOrderRequest request) {
-		var order = OrderResponse.from(orderService.create(request.toCommand()));
+	ResponseEntity<OrderResponse> create(@Valid @RequestBody CreateOrderRequest request, Principal principal) {
+		var order = OrderResponse.from(orderService.create(request.toCommand(principal.getName())));
 		return ResponseEntity.created(URI.create("/orders/" + order.id())).body(order);
 	}
 

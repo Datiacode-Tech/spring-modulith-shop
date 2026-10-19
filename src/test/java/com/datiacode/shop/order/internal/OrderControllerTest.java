@@ -2,6 +2,7 @@ package com.datiacode.shop.order.internal;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -17,15 +18,22 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithAnonymousUser;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.datiacode.shop.order.NewOrder;
 import com.datiacode.shop.order.OrderDetails;
 import com.datiacode.shop.order.OrderService;
 import com.datiacode.shop.order.UnknownProductException;
+import com.datiacode.shop.shared.config.SecurityConfig;
 
 @WebMvcTest(OrderController.class)
+@Import(SecurityConfig.class)
+@WithMockUser(username = "alice")
 class OrderControllerTest {
 
 	static final OrderDetails ORDER = new OrderDetails(1L, "alice", "COMPLETED",
@@ -33,7 +41,7 @@ class OrderControllerTest {
 			new BigDecimal("89.90"), Instant.parse("2026-10-16T10:00:00Z"));
 
 	static final String VALID_REQUEST = """
-			{"customer": "alice", "items": [{"sku": "KB-001", "quantity": 1}]}
+			{"items": [{"sku": "KB-001", "quantity": 1}]}
 			""";
 
 	@Autowired
@@ -55,11 +63,41 @@ class OrderControllerTest {
 	}
 
 	@Test
+	@DisplayName("POST /orders places the order for the authenticated user, not for a customer sent in the body")
+	void createUsesAuthenticatedUser() throws Exception {
+		given(orderService.create(any())).willReturn(ORDER);
+
+		mvc.perform(post("/orders").contentType(MediaType.APPLICATION_JSON).content(VALID_REQUEST))
+				.andExpect(status().isCreated());
+
+		verify(orderService).create(new NewOrder("alice", List.of(new NewOrder.Item("KB-001", 1))));
+	}
+
+	@Test
+	@DisplayName("Responses carry security headers, including a strict Referrer-Policy")
+	void responsesCarrySecurityHeaders() throws Exception {
+		given(orderService.findById(1L)).willReturn(Optional.of(ORDER));
+
+		mvc.perform(get("/orders/1"))
+				.andExpect(status().isOk())
+				.andExpect(header().string("X-Content-Type-Options", "nosniff"))
+				.andExpect(header().string("Referrer-Policy", "strict-origin-when-cross-origin"));
+	}
+
+	@Test
+	@WithAnonymousUser
+	@DisplayName("POST /orders returns 401 without credentials")
+	void createReturns401WhenAnonymous() throws Exception {
+		mvc.perform(post("/orders").contentType(MediaType.APPLICATION_JSON).content(VALID_REQUEST))
+				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
 	@DisplayName("POST /orders returns 400 when the request has no items")
 	void createReturns400OnInvalidRequest() throws Exception {
 		mvc.perform(post("/orders").contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"customer": "alice", "items": []}
+								{"items": []}
 								"""))
 				.andExpect(status().isBadRequest());
 	}
