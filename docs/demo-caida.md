@@ -33,7 +33,7 @@ psql -h localhost -p 5442 -U shop -d shop -c "
 # 4. Reiniciar la app (con dev basta; con dev,demo el reproceso vuelve a esperar 20 s) y repetir la consulta del paso 3
 ```
 
-## Resultado real (2026-10-19, fase 4)
+## Resultado real (2026-10-19, tag `blog-4-ia-testing`)
 
 Cada pedido genera tres publicaciones: `inventory`, `notification` y la externalización a Kafka (`EventExternalizerModuleListener`).
 

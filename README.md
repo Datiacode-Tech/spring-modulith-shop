@@ -36,7 +36,7 @@ cp .env.example .env
 
 # 2. Infraestructura: PostgreSQL (5442), Redpanda (19092), su consola (8091) y Mailpit (1026/8026)
 docker compose up -d
-#    Opcional, para la fase de IA: Ollama (11434) solo arranca con el perfil "ai"
+#    Opcional, para el módulo de IA: Ollama (11434) solo arranca con el perfil "ai"
 docker compose --profile ai up -d
 
 #    Una sola vez: el modelo local (~2 GB)
@@ -383,7 +383,3 @@ Las fronteras ya están verificadas, así que extraer un módulo es un cambio de
 2. Un servicio nuevo consume el topic en lugar de escuchar el evento en memoria; su lógica (`OrderConfirmationListener`, `EmailSender`, `TextWriter`) se mueve casi tal cual.
 3. Se borra el módulo del monolito. `ModularityTest` confirma que nadie más dependía de él.
 4. Lo que cambia de verdad: el evento pasa a ser un contrato público entre servicios (versionado), la idempotencia deja de ser opcional y el traceId tiene que viajar en las cabeceras del mensaje.
-
-## Estado
-
-Completo: las cuatro fases de desarrollo están cerradas. El registro de cambios está en [`CHANGELOG.md`](CHANGELOG.md).

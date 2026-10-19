@@ -1,6 +1,6 @@
 # ¿Detecta `verify()` un `ChatClient` usado fuera del módulo `ai`?
 
-Experimento de F4-06 (2026-10-19). Comprueba una afirmación habitual sobre Spring Modulith: *"verify() vigila nuestras clases, pero no impide que otro módulo use ChatClient directamente, porque es una librería"*.
+Experimento del 2026-10-19 sobre el tag `blog-4-ia-testing`. Comprueba una afirmación habitual sobre Spring Modulith: *"verify() vigila nuestras clases, pero no impide que otro módulo use ChatClient directamente, porque es una librería"*.
 
 ## El atajo
 
