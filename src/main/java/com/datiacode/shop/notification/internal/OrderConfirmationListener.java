@@ -43,7 +43,7 @@ class OrderConfirmationListener {
 		// Runs on another thread: user and trace id arrive through context propagation (see ContextPropagationConfig)
 		var authentication = SecurityContextHolder.getContext().getAuthentication();
 		log.info("Order {} confirmation requested by user {}", event.orderId(),
-				authentication != null ? authentication.getName() : "<none: republished after restart>");
+				authentication != null ? authentication.getName() : "<none: no SecurityContext on this thread>");
 
 		Thread.sleep(demoDelay);
 

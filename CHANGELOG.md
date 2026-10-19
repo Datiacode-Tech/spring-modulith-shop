@@ -56,7 +56,8 @@ F-id (ver `PLAN.md`). Cada bullet incluye `[YYYY-MM-DD HH:MM]` + `(F-id)` + desc
 - **[2026-10-19 11:01]** (F3-06) `SecurityConfig` añade `Referrer-Policy: strict-origin-when-cross-origin` (Spring Security no la pone por defecto); cubierto en `OrderControllerTest`.
 
 ### Fixed
-- (sin entradas)
+- **[2026-10-19 13:35]** (F4-08) `OrderConfirmationListener` registraba `<none: republished after restart>` siempre que no había usuario, también cuando el contexto se pierde sin reinicio (experimento del `TaskDecorator`, sin `spring-modulith-observability`); ahora registra `<none: no SecurityContext on this thread>`.
+- **[2026-10-19 13:35]** (F4-03) El comentario de `spring.ai.retry.max-attempts` decía "Retry once": la propiedad cuenta reintentos, no intentos. Medido con los valores por defecto (10): 11 llamadas y 22 minutos con el modelo caído. Con `2` son 3 llamadas (~3 s). Solo cambia el comentario.
 
 ### Security
 - (sin entradas)

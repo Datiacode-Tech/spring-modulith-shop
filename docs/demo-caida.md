@@ -60,7 +60,7 @@ Tras reiniciar:
 ```
 
 ```
-INFO [] ... [shop-async-1] c.d.s.n.i.OrderConfirmationListener : Order 14 confirmation requested by user <none: republished after restart>
+INFO [] ... [shop-async-1] c.d.s.n.i.OrderConfirmationListener : Order 14 confirmation requested by user <none: no SecurityContext on this thread>
 INFO [] ... [shop-async-1] c.d.s.notification.internal.EmailSender : Email sent to alice@example.com | Order #14 confirmed
 ```
 
